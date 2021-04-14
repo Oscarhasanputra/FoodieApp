@@ -1,7 +1,12 @@
+import 'package:FoodieApp/bloc/historybloc.dart';
+import 'package:FoodieApp/firebase/History.dart';
 import 'package:FoodieApp/stream/controllerindicator.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:uuid/uuid.dart';
 import 'dart:math';
 
 import 'ConfirmationPage.dart';
@@ -12,8 +17,10 @@ import 'firebase/Users.dart';
 class CartScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return  Scaffold(
-          body: CenterController(key: GlobalKey(), child: CartBody()));
+    return Scaffold(
+        body: BlocProvider(
+            create: (context) => HistoryBloc(),
+            child: CenterController(key: GlobalKey(), child: CartBody())));
   }
 }
 
@@ -26,14 +33,14 @@ class CartBody extends StatefulWidget {
 }
 
 class _CartBodyState extends State<CartBody> {
-  var maxTotal=0;
+  var maxTotal = 0.0;
   @override
-  initState(){
+  initState() {
     super.initState();
-    User.getUser().then((user){
-        setState((){
-          maxTotal=user.saldo;
-        });
+    User.getUser().then((user) {
+      setState(() {
+        maxTotal = user.saldo;
+      });
     });
     // WidgetsBinding.instance.addPersistentFrameCallback((timeStamp) {
     //     print("after build");
@@ -41,6 +48,7 @@ class _CartBodyState extends State<CartBody> {
     // User _user= await User.getUser();
     // maxTotal=_user.saldo;
     final cartList = BlocProvider.of<CartListCubit>(context).cart;
+
     widget.total = cartList.getTotalHarga();
     // nominal=0;
   }
@@ -157,6 +165,8 @@ class _CartBodyState extends State<CartBody> {
 
                       _parentWidget.streamIndicator
                         ..stream.listen((event) {
+                          print("listening event");
+                          print(event);
                           if (event == "finish") {
                             _loading.closeLoading();
                             Navigator.of(context).push(PageRouteBuilder(
@@ -186,7 +196,7 @@ class _CartBodyState extends State<CartBody> {
                 fontSize: 25,
                 color: Color(0xff525490)),
           ),
-          CartTransaction(onAdd: (nominal) {
+          CartTransaction(onAdd: (nominal, cartItem) {
             if (widget.total + nominal <= maxTotal &&
                 widget.total + nominal >= 0) {
               final gradient = widget.total / maxTotal;
@@ -203,6 +213,11 @@ class _CartBodyState extends State<CartBody> {
                   .dependOnInheritedWidgetOfExactType<CenterController>()
                   .controller
                   .forward(from: absSelisih);
+            } else {
+              if (nominal < 0)
+                cartItem.addItem(-1);
+              else
+                cartItem.addItem(1);
             }
           })
         ],
@@ -228,7 +243,7 @@ class CenterController extends InheritedWidget {
 }
 
 class CartTransaction extends StatefulWidget {
-  final Function(double) onAdd;
+  final Function(double, CartItem) onAdd;
   CartTransaction({this.onAdd});
   @override
   _CartTransactionState createState() => _CartTransactionState();
@@ -277,10 +292,26 @@ class _CartTransactionState extends State<CartTransaction>
                   itemCounts: cartFilterList.length,
                   index: cartFilterList.toList().indexOf(e),
                   onDestroy: () {
-                    // print("on Destroy");
+                    print("on Destroy");
                     setState(() {
-                      cartList.removeIndex(0);
-                      if (cartList.cart.length == 0) {
+                      final cartItem = cartFilterList.first;
+                      User.getUser().then((user) {
+                        final uuid = Uuid().v1();
+                        History.getHistoryCollection(user.id).collection.set({
+                          "$uuid": {
+                            "type": "payment",
+                            "cart": FieldValue.arrayUnion([
+                              {
+                                "type": "produk",
+                                ...cartItem.toJson(),
+                              }
+                            ])
+                          }
+                        }, SetOptions(merge: true));
+                      });
+                      cartList.removeAt(cartItem.id);
+                      if (cartFilterList.length == 0) {
+                        cartList.saveCartList().then((data) {});
                         context
                             .dependOnInheritedWidgetOfExactType<
                                 CenterController>()
@@ -302,7 +333,7 @@ class ChildTransaction extends StatefulWidget {
   final bool start;
   final CartItem item;
   final index, itemCounts;
-  final Function(double) onAdd;
+  final Function(double, CartItem) onAdd;
   final Function() onDestroy;
   final Key key;
   ChildTransaction(
@@ -424,7 +455,7 @@ class _ChildTransactionState extends State<ChildTransaction>
                           InkWell(
                             onTap: () {
                               widget.item.addItem(1);
-                              widget.onAdd(widget.item.harga);
+                              widget.onAdd(widget.item.harga, widget.item);
                             },
                             child: Container(
                               margin: EdgeInsets.only(top: 10),
@@ -440,7 +471,7 @@ class _ChildTransactionState extends State<ChildTransaction>
                           InkWell(
                             onTap: () {
                               widget.item.addItem(-1);
-                              widget.onAdd(-widget.item.harga);
+                              widget.onAdd(-widget.item.harga, widget.item);
                             },
                             child: Container(
                               margin: EdgeInsets.all(10),

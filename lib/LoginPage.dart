@@ -159,12 +159,11 @@ class _LoginPageState extends State<LoginPage> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             InkWell(
-                              onTap: (){
+                              onTap: () {
                                 Navigator.of(context).push(MaterialPageRoute(
-                                  builder: (context)=>SignUpScreen()
-                                ));
+                                    builder: (context) => SignUpScreen()));
                               },
-                                                          child: Text(
+                              child: Text(
                                 "Sign Up",
                                 style: GoogleFonts.roboto(
                                   decoration: TextDecoration.underline,
@@ -196,8 +195,14 @@ class _LoginPageState extends State<LoginPage> {
       final _loading = Loading.of(context)..showLoading();
       User.getUserLogin(_formValue['email'], _formValue['password'])
           .then((snapshot) {
-            final _data=snapshot.docs.first.data();
-            User.saveUser(id:snapshot.docs.first.id,saldo:_data['saldo'],email:_data['email'],nama:_data['nama'],photo: _data['photo'],password: _data['password']);
+        final _data = snapshot.docs.first.data();
+        User.saveUser(
+            id: snapshot.docs.first.id,
+            saldo: _data['saldo'],
+            email: _data['email'],
+            nama: _data['nama'],
+            photo: _data['photo'],
+            password: _data['password']);
         _loading.closeLoading();
         if (snapshot.size > 0) {
           Navigator.of(context).pushReplacement(
@@ -218,6 +223,11 @@ class _LoginPageState extends State<LoginPage> {
             content: Text("Email atau Password salah, Silahkan Coba Lagi!"),
           ));
         }
+      }).catchError((error) {
+        _loading.closeLoading();
+        Scaffold.of(context).showSnackBar(SnackBar(
+          content: Text("Email atau Password salah, Silahkan Coba Lagi!"),
+        ));
       });
     }
     // User.getUserLogin(form, password)

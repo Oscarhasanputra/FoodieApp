@@ -1,8 +1,11 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:FoodieApp/Loading.dart';
+import 'package:FoodieApp/firebase/History.dart';
 import 'package:FoodieApp/firebase/Users.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_icons/flutter_icons.dart';
+import 'package:uuid/uuid.dart';
 
 import 'Cart.dart';
 import 'package:FoodieApp/bloc/cartlistitem.dart';
@@ -117,9 +120,8 @@ class SaldoInfo extends StatelessWidget {
             StreamBuilder(
               stream: _user.getSaldoStream(),
               builder: (context, AsyncSnapshot<DocumentSnapshot> document) {
-                final _saldo = document.hasData
-                    ? document.data.get("saldo").toString()
-                    : 0;
+                final _saldo =
+                    document.hasData ? document.data.get("saldo") : 0.0;
                 return Text(
                   "\$ $_saldo",
                   style: GoogleFonts.merriweather(
@@ -390,15 +392,20 @@ class TopUp extends StatelessWidget {
                             alignment: Alignment.centerRight,
                             child: InkWell(
                               onTap: () async {
-                                
-                                final _loading = Loading.of(context)..showLoading();
+                                final _loading = Loading.of(context)
+                                  ..showLoading();
                                 final _user = await User.getUser();
-                                await _user.setSaldo(int.parse(_controllerText.text));
-                                await FirebaseFirestore.instance
-                                    .collection("users")
-                                    .doc(_user.id)
-                                    .update({"saldo": _user.saldo});
-                                
+                                final uuid = Uuid().v1();
+                                History.getHistoryCollection(_user.id)
+                                    .collection
+                                    .set({
+                                  "$uuid": {
+                                    "type": "topup",
+                                    "saldo": double.parse(_controllerText.text),
+                                    "status": "ask"
+                                  }
+                                }, SetOptions(merge: true));
+
                                 Navigator.of(context).pop();
                                 _loading.closeLoading();
                               },
@@ -539,6 +546,10 @@ class _FormSearchState extends State<FormSearch>
   void initState() {
     // TODO: implement initState
     cubit = BlocProvider.of<CartListCubit>(context);
+
+    cubit.cart.initialize().then((a) {
+      setState(() {});
+    });
     _controllerForm =
         AnimationController(duration: Duration(milliseconds: 100), vsync: this)
           ..addStatusListener((status) {

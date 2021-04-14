@@ -26,7 +26,7 @@ class _CameraScreenState extends State<CameraScreen> {
       // Get a specific camera from the list of available cameras.
       widget.camera[widget.indexCamera],
       // Define the resolution to use.
-      ResolutionPreset.medium,
+      ResolutionPreset.max,
     );
     return Scaffold(
       body: FutureBuilder(
@@ -44,17 +44,18 @@ class _CameraScreenState extends State<CameraScreen> {
                         alignment: Alignment.center,
                         child: IconButton(
                           onPressed: () async {
-                            final pathString=path.join(
-                              (await getTemporaryDirectory()).path,
-                              DateTime.now().toString()+".png"
-                            );
+                            final pathString = path.join(
+                                (await getTemporaryDirectory()).path,
+                                DateTime.now().toString() + ".png");
 
-                            await _controller.takePicture(pathString);
-                            Navigator.of(context).pop(pathString);
+                            final image = await _controller.takePicture();
+                            print("image");
+                            print(image.path);
+                            Navigator.of(context).pop(image.path);
                             // Navigator.of(context).push(
                             //   MaterialPageRoute(
                             //     builder: (context){
-                            //       return DisplayPictureScreen(imagePath: pathString,);    
+                            //       return DisplayPictureScreen(imagePath: pathString,);
                             //     }
                             //   )
                             // );

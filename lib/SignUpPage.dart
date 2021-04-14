@@ -1,8 +1,7 @@
 import 'dart:io';
-
 import 'package:FoodieApp/firebase/SignUp.dart';
 import 'package:camera/camera.dart';
-import 'package:camera/new/camera.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
@@ -174,13 +173,13 @@ class _FormSignUpState extends State<FormSignUp> {
                           // final formModal=;
                           User.getUserLoginById(account.id)
                               .then((docSnap) async {
-                                // print("id : ${account.id}");
+                            // print("id : ${account.id}");
                             final _data = docSnap.data();
                             if (_data != null) {
                               final _loading = Loading.of(context)
                                 ..showLoading();
                               await User.saveUser(
-                                  id:account.id,
+                                  id: account.id,
                                   email: _data['email'],
                                   password: _data['password'],
                                   photo: _data['photo'],
@@ -194,21 +193,25 @@ class _FormSignUpState extends State<FormSignUp> {
                                   ))
                                   .closed
                                   .then((reason) {
-                                Navigator.of(context).pushAndRemoveUntil(PageRouteBuilder(
-                                    pageBuilder: (context, _, __) =>
-                                        MenuScreen(),
-                                    transitionsBuilder:
-                                        (context, animation, second, child) {
-                                      var begin = Offset(1, 0.0);
-                                      var end = Offset.zero;
-                                      var tween = Tween(begin: begin, end: end);
-                                      var offsetAnimation =
-                                          animation.drive(tween);
+                                Navigator.of(context).pushAndRemoveUntil(
+                                    PageRouteBuilder(
+                                        pageBuilder: (context, _, __) =>
+                                            MenuScreen(),
+                                        transitionsBuilder: (context, animation,
+                                            second, child) {
+                                          var begin = Offset(1, 0.0);
+                                          var end = Offset.zero;
+                                          var tween =
+                                              Tween(begin: begin, end: end);
+                                          var offsetAnimation =
+                                              animation.drive(tween);
 
-                                      return SlideTransition(
-                                          position: offsetAnimation,
-                                          child: child);
-                                    }),(Route<dynamic> route)=>route is SignUpScreen);
+                                          return SlideTransition(
+                                              position: offsetAnimation,
+                                              child: child);
+                                        }),
+                                    (Route<dynamic> route) =>
+                                        route is SignUpScreen);
                               });
                             } else {
                               showModalBottomSheet(
@@ -281,6 +284,8 @@ class _FormSignUpState extends State<FormSignUp> {
                             final _loading = Loading.of(context)..showLoading();
                             Reference ref = storage.ref().child(
                                 "photo/${_fileName[_fileName.length - 1]}");
+                            print("uploading");
+                            print(widget.filePath);
                             UploadTask task =
                                 ref.putFile(File(widget.filePath));
                             // ref.putData();
@@ -289,7 +294,7 @@ class _FormSignUpState extends State<FormSignUp> {
                               ref.getDownloadURL().then((url) {
                                 // print("$url");
                                 _formValue['photo'] = url;
-                                _formValue['saldo']=0;
+                                _formValue['saldo'] = 0;
                                 final _uuId = Uuid();
                                 FirebaseFirestore.instance
                                     .collection("users")

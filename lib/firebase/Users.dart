@@ -6,26 +6,26 @@ import 'package:uuid/uuid.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class User {
-  final id,photo, password, email, nama;
-  var saldo;
-  final _fireStore=FirebaseFirestore.instance;
-  User({this.id,this.photo, this.password, this.email, this.nama, this.saldo});
+  final id, photo, password, email, nama;
+  double saldo;
+  final _fireStore = FirebaseFirestore.instance;
+  User({this.id, this.photo, this.password, this.email, this.nama, this.saldo});
 
   Map toJson() {
     return {
-      "id":this.id,
+      "id": this.id,
       "photo": this.photo,
       "password": this.password,
       "email": this.email,
       "nama": this.nama,
-      "saldo":this.saldo,
+      "saldo": this.saldo,
     };
   }
-  Stream<DocumentSnapshot> getSaldoStream(){
+
+  Stream<DocumentSnapshot> getSaldoStream() {
     // print("id user : ${this.id}");
     return _fireStore.collection("users").doc(this.id).snapshots();
   }
-
 
   static Future<void> addUser(Map<String, dynamic> data) async {
     final uuid = Uuid();
@@ -65,24 +65,28 @@ class User {
   static Future<User> getUser() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     Map user = jsonDecode(prefs.getString("user"));
-     print("id user : ${user['saldo']}");
-    return User.mapToUser(user);
+    print("id user : ${user['saldo']}");
+    if (user != null) return User.mapToUser(user);
+
+    throw ("User Belum Login");
   }
 
   factory User.mapToUser(Map<String, dynamic> user) {
+    // if(user!=null)
     return User(
-        id:user['id'],
+        id: user['id'],
         email: user['email'],
         nama: user['nama'],
         password: user['password'],
         photo: user['photo'],
         saldo: user['saldo']);
   }
-  static Future<bool> saveUser({id,email, password, nama, photo, saldo}) async {
+  static Future<bool> saveUser(
+      {id, email, password, nama, photo, saldo}) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-   
+
     User user = User(
-        id:id,
+        id: id,
         email: email,
         password: password,
         nama: nama,
@@ -92,7 +96,7 @@ class User {
     return prefs.setString("user", _user);
   }
 
-  Future<void> setSaldo(int saldo) async {
+  Future<void> setSaldo(double saldo) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     // print(this.saldo);
     this.saldo += saldo;

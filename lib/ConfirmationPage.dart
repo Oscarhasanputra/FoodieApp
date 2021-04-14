@@ -1,5 +1,7 @@
+import 'package:FoodieApp/bloc/historybloc.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_icons/flutter_icons.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -7,14 +9,17 @@ class ConfirmationScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // TODO: implement build
-    return Scaffold(body: ConfirmationPage());
-    
+    return Scaffold(
+        body: BlocProvider(
+            create: (context) => HistoryBloc(), child: ConfirmationPage()));
   }
 }
 
 class ConfirmationPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final blocHistory = BlocProvider.of<HistoryBloc>(context);
+    blocHistory.initialize();
     return Container(
       color: Color(0xff55BFB5),
       alignment: Alignment.center,
